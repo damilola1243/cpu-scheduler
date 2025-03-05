@@ -1,4 +1,5 @@
 import React from 'react';
+import styles from '../app/styles.module.css'; // Import styles from page.tsx
 
 interface Process {
   id: number;
@@ -19,7 +20,7 @@ function ProcessTable({ results }: ProcessTableProps) {
   }
 
   return (
-    <table>
+    <table className={styles.table}>
       <thead>
         <tr>
           <th>Process ID</th>
@@ -38,7 +39,9 @@ function ProcessTable({ results }: ProcessTableProps) {
 
           return (
             <tr key={`${process.id}-${index}`}>
-              <td>{process.id}</td>
+              <td title={`Process ID: ${process.id}, Arrival Time: ${process.arrivalTime}, Burst Time: ${process.burstTime}`}>
+                {process.id}
+              </td>
               <td>{process.arrivalTime}</td>
               <td>{process.burstTime}</td>
               <td>{process.startTime}</td>
