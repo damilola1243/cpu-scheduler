@@ -1,101 +1,167 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from 'react';
+import ProcessTable from '../components/ProcessTable';
+import GanttChart from '../components/GanttChart';
+
+interface Process {
+  id: number;
+  arrivalTime: number;
+  burstTime: number;
+  remainingTime: number;
+  startTime?: number;
+  endTime?: number;
+}
+
+function generateProcesses(numProcesses: number): Process[] {
+  const processes: Process[] = [];
+  for (let i = 0; i < numProcesses; i++) {
+    processes.push({
+      id: i + 1,
+      arrivalTime: Math.floor(Math.random() * 10),
+      burstTime: Math.floor(Math.random() * 15) + 1,
+      remainingTime: 0,
+    });
+  }
+  processes.forEach(process => process.remainingTime = process.burstTime);
+  return processes;
+}
+
+function fifo(processes: Process[]): Process[] {
+  const executionOrder: Process[] = [];
+  const sortedProcesses = [...processes].sort((a, b) => a.arrivalTime - b.arrivalTime);
+  let currentTime = 0;
+
+  sortedProcesses.forEach((process) => {
+    currentTime = Math.max(currentTime, process.arrivalTime);
+    const nextProcess = process as Process; //Type assertion here.
+    executionOrder.push({
+      ...nextProcess,
+      startTime: currentTime,
+      endTime: currentTime + nextProcess.burstTime,
+    });
+    currentTime += nextProcess.burstTime;
+  });
+
+  return executionOrder;
+}
+
+function sjf(processes: Process[]): Process[] {
+  const executionOrder: Process[] = [];
+  const availableProcesses: Process[] = [];
+  const sortedProcesses = [...processes].sort((a, b) => a.arrivalTime - b.arrivalTime);
+  let currentTime = 0;
+  let processIndex = 0;
+
+  while (executionOrder.length < processes.length) {
+    while (processIndex < sortedProcesses.length && sortedProcesses[processIndex].arrivalTime <= currentTime) {
+      availableProcesses.push(sortedProcesses[processIndex]);
+      processIndex++;
+    }
+
+    if (availableProcesses.length === 0) {
+      currentTime = sortedProcesses[processIndex].arrivalTime;
+      continue;
+    }
+
+    availableProcesses.sort((a, b) => a.burstTime - b.burstTime);
+    const nextProcess = availableProcesses.shift() as Process; // Type assertion here
+
+    executionOrder.push({
+      ...nextProcess,
+      startTime: currentTime,
+      endTime: currentTime + nextProcess.burstTime,
+    });
+    currentTime += nextProcess.burstTime;
+  }
+  return executionOrder;
+}
+
+function stcf(processes: Process[]): Process[] {
+  const executionOrder: Process[] = [];
+  const remainingProcesses = processes.map(process => ({ ...process }));
+  let currentTime = 0;
+
+  while (remainingProcesses.length > 0) {
+    let shortestProcess: number | null = null;
+    let shortestRemainingTime = Infinity;
+
+    for (let i = 0; i < remainingProcesses.length; i++) {
+      if (remainingProcesses[i].arrivalTime <= currentTime && remainingProcesses[i].remainingTime < shortestRemainingTime && remainingProcesses[i].remainingTime > 0) {
+        shortestProcess = i;
+        shortestRemainingTime = remainingProcesses[i].remainingTime;
+      }
+    }
+
+    if (shortestProcess === null) {
+      currentTime++;
+      continue;
+    }
+
+    remainingProcesses[shortestProcess].remainingTime--;
+
+    if (remainingProcesses[shortestProcess].remainingTime === 0) {
+      executionOrder.push({
+        ...processes[shortestProcess],
+        startTime: currentTime - processes[shortestProcess].burstTime + 1,
+        endTime: currentTime + 1
+      });
+      remainingProcesses.splice(shortestProcess, 1);
+    }
+
+    currentTime++;
+  }
+  return executionOrder;
+}
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [numProcesses, setNumProcesses] = useState<number>(5);
+  const [processes, setProcesses] = useState<Process[]>([]);
+  const [results, setResults] = useState<Process[]>([]);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+  const handleGenerateProcesses = () => {
+    setProcesses(generateProcesses(numProcesses));
+  };
+
+  const handleRunFIFO = () => {
+    setResults(fifo(processes));
+  };
+
+  const handleRunSJF = () => {
+    setResults(sjf(processes));
+  };
+
+  const handleRunSTCF = () => {
+    setResults(stcf(processes));
+  }
+
+  return (
+    <div>
+      <h1>CPU Scheduling Simulator</h1>
+      <label>Number of Processes:</label>
+      <input
+        type="number"
+        value={numProcesses}
+        onChange={(e) => setNumProcesses(parseInt(e.target.value))}
+      />
+      <button onClick={handleGenerateProcesses}>Generate Processes</button>
+      <button onClick={handleRunFIFO}>Run FIFO</button>
+      <button onClick={handleRunSJF}>Run SJF</button>
+      <button onClick={handleRunSTCF}>Run STCF</button>
+      {processes.length > 0 && (
+        <div>
+        <h2>Processes:</h2>
+        <pre>{JSON.stringify(processes, null, 2)}</pre>
+        <h2>Results:</h2>
+        <ProcessTable results={results} />
+        <GanttChart
+          executionOrder={results.filter(
+            (process): process is Process & { startTime: number; endTime: number } =>
+              process.startTime !== undefined && process.endTime !== undefined
+          )}
+        />
+      </div>
+    )}
+  </div>
+);
 }
