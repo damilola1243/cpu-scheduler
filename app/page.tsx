@@ -121,6 +121,11 @@ export default function Home() {
   const [processes, setProcesses] = useState<Process[]>([]);
   const [results, setResults] = useState<Process[]>([]);
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [allResults, setAllResults] = useState<{
+    fifo: Process[];
+    sjf: Process[];
+    stcf: Process[];
+  }>({ fifo: [], sjf: [], stcf: [] });
 
   const handleGenerateProcesses = () => {
     if (numProcesses <= 0) {
@@ -132,15 +137,32 @@ export default function Home() {
   };
 
   const handleRunFIFO = () => {
-    setResults(fifo(processes));
+    setAllResults({
+      ...allResults,
+      fifo: fifo(processes),
+    });
   };
 
   const handleRunSJF = () => {
-    setResults(sjf(processes));
+    setAllResults({
+      ...allResults,
+      sjf: sjf(processes),
+    });
   };
 
   const handleRunSTCF = () => {
-    setResults(stcf(processes));
+    setAllResults({
+      ...allResults,
+      stcf: stcf(processes),
+    });
+  };
+
+  const handleRunAll = () => {
+    setAllResults({
+      fifo: fifo(processes),
+      sjf: sjf(processes),
+      stcf: stcf(processes),
+    });
   };
 
   return (
@@ -172,15 +194,29 @@ export default function Home() {
       <button onClick={handleRunFIFO} className={styles.button}>Run FIFO</button>
       <button onClick={handleRunSJF} className={styles.button}>Run SJF</button>
       <button onClick={handleRunSTCF} className={styles.button}>Run STCF</button>
+      <button onClick={handleRunAll} className={styles.button}>Run All</button>
       {processes.length > 0 && (
         <div>
           <h2>Processes:</h2>
           <ProcessDisplayTable processes={processes} />
           <h2>Results:</h2>
-          <ProcessTable results={results} />
+          <div style={{ display: "flex" }}>
+            <div style={{ flex: 1 }}>
+              <h3>FIFO</h3>
+              <ProcessTable results={allResults.fifo} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <h3>SJF</h3>
+              <ProcessTable results={allResults.sjf} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <h3>STCF</h3>
+              <ProcessTable results={allResults.stcf} />
+            </div>
+          </div>
           <h2 className={styles.chartTitle}>Gantt Chart</h2>
           <GanttChart
-            executionOrder={results.filter(
+            executionOrder={allResults.fifo.filter(
               (process): process is Process & { startTime: number; endTime: number } =>
                 process.startTime !== undefined && process.endTime !== undefined
             )}
