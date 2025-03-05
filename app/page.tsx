@@ -119,8 +119,14 @@ export default function Home() {
   const [numProcesses, setNumProcesses] = useState<number>(5);
   const [processes, setProcesses] = useState<Process[]>([]);
   const [results, setResults] = useState<Process[]>([]);
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   const handleGenerateProcesses = () => {
+    if (numProcesses <= 0) {
+      setErrorMessage('Please enter a positive number of processes.');
+      return;
+    }
+    setErrorMessage('');
     setProcesses(generateProcesses(numProcesses));
   };
 
@@ -134,7 +140,7 @@ export default function Home() {
 
   const handleRunSTCF = () => {
     setResults(stcf(processes));
-  }
+  };
 
   return (
     <div className={styles.container}>
@@ -147,6 +153,7 @@ export default function Home() {
         className={styles.input}
       />
       <button onClick={handleGenerateProcesses} className={styles.button}>Generate Processes</button>
+      {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
       <button onClick={handleRunFIFO} className={styles.button}>Run FIFO</button>
       <button onClick={handleRunSJF} className={styles.button}>Run SJF</button>
       <button onClick={handleRunSTCF} className={styles.button}>Run STCF</button>
