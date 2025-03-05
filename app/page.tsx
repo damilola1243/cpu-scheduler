@@ -201,26 +201,40 @@ export default function Home() {
           <ProcessDisplayTable processes={processes} />
           <h2>Results:</h2>
           <div style={{ display: "flex" }}>
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1, marginRight: "20px" }}>
               <h3>FIFO</h3>
               <ProcessTable results={allResults.fifo} />
+              <h2 className={styles.chartTitle}>Gantt Chart (FIFO)</h2>
+              <GanttChart
+                executionOrder={allResults.fifo.filter(
+                  (process): process is Process & { startTime: number; endTime: number } =>
+                    process.startTime !== undefined && process.endTime !== undefined
+                )}
+              />
             </div>
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1, marginRight: "20px" }}>
               <h3>SJF</h3>
               <ProcessTable results={allResults.sjf} />
+              <h2 className={styles.chartTitle}>Gantt Chart (SJF)</h2>
+              <GanttChart
+                executionOrder={allResults.sjf.filter(
+                  (process): process is Process & { startTime: number; endTime: number } =>
+                    process.startTime !== undefined && process.endTime !== undefined
+                )}
+              />
             </div>
             <div style={{ flex: 1 }}>
               <h3>STCF</h3>
               <ProcessTable results={allResults.stcf} />
+              <h2 className={styles.chartTitle}>Gantt Chart (STCF)</h2>
+              <GanttChart
+                executionOrder={allResults.stcf.filter(
+                  (process): process is Process & { startTime: number; endTime: number } =>
+                    process.startTime !== undefined && process.endTime !== undefined
+                )}
+              />
             </div>
           </div>
-          <h2 className={styles.chartTitle}>Gantt Chart</h2>
-          <GanttChart
-            executionOrder={allResults.fifo.filter(
-              (process): process is Process & { startTime: number; endTime: number } =>
-                process.startTime !== undefined && process.endTime !== undefined
-            )}
-          />
         </div>
       )}
     </div>
