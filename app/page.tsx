@@ -147,11 +147,20 @@ export default function Home() {
       <h1 className={styles.title}>CPU Scheduling Simulator</h1>
       <label className={styles.label}>Number of Processes:</label>
       <input
-        type="number"
-        value={numProcesses}
-        onChange={(e) => setNumProcesses(parseInt(e.target.value))}
-        className={styles.input}
-      />
+  type="number"
+  value={numProcesses}
+  onChange={(e) => {
+    const parsedValue = parseInt(e.target.value);
+    if (isNaN(parsedValue) || parsedValue < 0) {
+      setNumProcesses(0); // Set to 0 or another default value
+      setErrorMessage('Please enter a positive number.');
+    } else {
+      setNumProcesses(parsedValue);
+      setErrorMessage('');
+    }
+  }}
+  className={styles.input}
+/>
       <button onClick={handleGenerateProcesses} className={styles.button}>Generate Processes</button>
       {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
       <button onClick={handleRunFIFO} className={styles.button}>Run FIFO</button>
