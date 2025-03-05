@@ -1,42 +1,58 @@
-"use client";
+import React from 'react';
+import { motion } from 'framer-motion';
 
-import { Bar } from 'react-chartjs-2';
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartData, ChartOptions } from 'chart.js';
-
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+interface Process {
+  id: number;
+  arrivalTime: number;
+  burstTime: number;
+  remainingTime: number;
+  startTime?: number;
+  endTime?: number;
+}
 
 interface GanttChartProps {
-  executionOrder: {
-    id: number;
-    startTime: number;
-    endTime: number;
-  }[];
+  executionOrder: (Process & { startTime: number; endTime: number })[];
 }
 
 function GanttChart({ executionOrder }: GanttChartProps) {
-  if (!executionOrder || executionOrder.length === 0) return null;
+  if (!executionOrder || executionOrder.length === 0) {
+    return null;
+  }
 
-  const labels = executionOrder.map((process) => `P${process.id}`);
+  const maxEndTime = Math.max(...executionOrder.map((process) => process.endTime || 0));
 
-  const data: ChartData<'bar'> = {
-    labels,
-    datasets: [
-      {
-        label: 'Process Execution',
-        data: executionOrder.map((process) => process.endTime - process.startTime),
-        backgroundColor: 'rgba(54, 162, 235, 0.5)',
-      },
-    ],
-  };
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', height: '50px', width: '100%', overflowX: 'auto' }}>
+      {executionOrder.map((process) => {
+        const startTime = process.startTime || 0;
+        const endTime = process.endTime || 0;
+        const duration = endTime - startTime;
+        const startPercentage = (startTime / maxEndTime) * 100;
+        const widthPercentage = (duration / maxEndTime) * 100;
 
-  const options: ChartOptions<'bar'> = {
-    indexAxis: 'y',
-    plugins: {
-      legend: { display: false },
-    },
-  };
-
-  return <Bar data={data} options={options} />;
+        return (
+          <motion.div
+            key={process.id}
+            style={{
+              position: 'absolute',
+              left: `${startPercentage}%`,
+              height: '30px',
+              backgroundColor: '#007bff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+            }}
+            initial={{ width: 0 }}
+            animate={{ width: `${widthPercentage}%` }}
+            transition={{ duration: 1 }}
+          >
+            {process.id}
+          </motion.div>
+        );
+      })}
+    </div>
+  );
 }
 
 export default GanttChart;
