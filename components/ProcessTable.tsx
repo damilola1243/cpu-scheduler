@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from '../app/styles.module.css'; // Import styles from page.tsx
+// import styles from '../page/styles.module.css'; // Remove CSS module import
 
 interface Process {
   id: number;
@@ -20,7 +20,7 @@ function ProcessTable({ results }: ProcessTableProps) {
   }
 
   return (
-    <table className={styles.table}>
+    <table>
       <thead>
         <tr>
           <th>Process ID</th>
@@ -38,7 +38,10 @@ function ProcessTable({ results }: ProcessTableProps) {
           const waitingTime = process.startTime !== undefined && process.arrivalTime !== undefined ? process.startTime - process.arrivalTime : 0;
 
           return (
-            <tr key={`${process.id}-${index}`}>
+            <tr
+              key={`${process.id}-${index}`}
+              style={{ backgroundColor: index % 2 === 0 ? '#ffffff' : '#e6f7ff' }} // Apply inline styles
+            >
               <td title={`Process ID: ${process.id}, Arrival Time: ${process.arrivalTime}, Burst Time: ${process.burstTime}`}>
                 {process.id}
               </td>
