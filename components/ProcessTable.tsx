@@ -32,12 +32,12 @@ function ProcessTable({ results }: ProcessTableProps) {
         </tr>
       </thead>
       <tbody>
-        {results.map((process) => {
+        {results.map((process, index) => {
           const turnaroundTime = process.endTime !== undefined && process.arrivalTime !== undefined ? process.endTime - process.arrivalTime : 0;
           const waitingTime = process.startTime !== undefined && process.arrivalTime !== undefined ? process.startTime - process.arrivalTime : 0;
 
           return (
-            <tr key={process.id}>
+            <tr key={`${process.id}-${index}`}>
               <td>{process.id}</td>
               <td>{process.arrivalTime}</td>
               <td>{process.burstTime}</td>
