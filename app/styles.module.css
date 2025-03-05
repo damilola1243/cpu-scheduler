@@ -62,3 +62,19 @@
       margin-top: 20px;
       margin-bottom: 10px;
   }
+
+  .pre {
+    background-color: #333; /* Dark background */
+    color: #f0f0f0; /* Light text */
+    padding: 10px;
+    border-radius: 5px;
+    overflow-x: auto; /* Enable horizontal scrolling if needed */
+    white-space: pre-wrap; /* Allow text to wrap */
+    margin-bottom: 20px;
+  }
+  
+  .chartTitle {
+      font-size: 20px;
+      margin-top: 20px;
+      margin-bottom: 10px;
+  }

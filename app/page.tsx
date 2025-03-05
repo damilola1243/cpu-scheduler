@@ -147,20 +147,25 @@ export default function Home() {
       <h1 className={styles.title}>CPU Scheduling Simulator</h1>
       <label className={styles.label}>Number of Processes:</label>
       <input
-  type="number"
-  value={numProcesses}
-  onChange={(e) => {
-    const parsedValue = parseInt(e.target.value);
-    if (isNaN(parsedValue) || parsedValue < 0) {
-      setNumProcesses(0); // Set to 0 or another default value
-      setErrorMessage('Please enter a positive number.');
-    } else {
-      setNumProcesses(parsedValue);
-      setErrorMessage('');
-    }
-  }}
-  className={styles.input}
-/>
+        type="number"
+        value={numProcesses}
+        onChange={(e) => {
+          const parsedValue = parseInt(e.target.value);
+          if (isNaN(parsedValue) || parsedValue < 0) {
+            setNumProcesses(0);
+            setErrorMessage('Please enter a positive number.');
+          } else {
+            setNumProcesses(parsedValue);
+            setErrorMessage('');
+          }
+        }}
+        onKeyPress={(e) => {
+          if (e.key === '-' || e.key === 'e') {
+            e.preventDefault();
+          }
+        }}
+        className={styles.input}
+      />
       <button onClick={handleGenerateProcesses} className={styles.button}>Generate Processes</button>
       {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
       <button onClick={handleRunFIFO} className={styles.button}>Run FIFO</button>
@@ -169,7 +174,7 @@ export default function Home() {
       {processes.length > 0 && (
         <div>
           <h2>Processes:</h2>
-          <pre>{JSON.stringify(processes, null, 2)}</pre>
+          <pre className={styles.pre}>{JSON.stringify(processes, null, 2)}</pre>
           <h2>Results:</h2>
           <ProcessTable results={results} />
           <h2 className={styles.chartTitle}>Gantt Chart</h2>
