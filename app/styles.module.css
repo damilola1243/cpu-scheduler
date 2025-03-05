@@ -78,10 +78,10 @@
   }
   
   .table th {
-    background-color: #f2f2f2;
-    color: #333; /* Add dark gray font color */
+    background-color: #e0e0e0; /* Slightly darker gray header */
+    color: #333; /* Dark gray font color */
   }
   
   .table tbody tr:nth-child(even) {
-    background-color: #f9f9f9;
+    background-color: #f0f8ff; /* Light blue for even rows */
   }
