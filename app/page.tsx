@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import ProcessTable from '../components/ProcessTable';
 import GanttChart from '../components/GanttChart';
+import styles from './styles.module.css'; // Import the CSS module
 
 interface Process {
   id: number;
@@ -34,7 +35,7 @@ function fifo(processes: Process[]): Process[] {
 
   sortedProcesses.forEach((process) => {
     currentTime = Math.max(currentTime, process.arrivalTime);
-    const nextProcess = process as Process; //Type assertion here.
+    const nextProcess = process as Process;
     executionOrder.push({
       ...nextProcess,
       startTime: currentTime,
@@ -65,7 +66,7 @@ function sjf(processes: Process[]): Process[] {
     }
 
     availableProcesses.sort((a, b) => a.burstTime - b.burstTime);
-    const nextProcess = availableProcesses.shift() as Process; // Type assertion here
+    const nextProcess = availableProcesses.shift() as Process;
 
     executionOrder.push({
       ...nextProcess,
@@ -136,32 +137,34 @@ export default function Home() {
   }
 
   return (
-    <div>
-      <h1>CPU Scheduling Simulator</h1>
-      <label>Number of Processes:</label>
+    <div className={styles.container}>
+      <h1 className={styles.title}>CPU Scheduling Simulator</h1>
+      <label className={styles.label}>Number of Processes:</label>
       <input
         type="number"
         value={numProcesses}
         onChange={(e) => setNumProcesses(parseInt(e.target.value))}
+        className={styles.input}
       />
-      <button onClick={handleGenerateProcesses}>Generate Processes</button>
-      <button onClick={handleRunFIFO}>Run FIFO</button>
-      <button onClick={handleRunSJF}>Run SJF</button>
-      <button onClick={handleRunSTCF}>Run STCF</button>
+      <button onClick={handleGenerateProcesses} className={styles.button}>Generate Processes</button>
+      <button onClick={handleRunFIFO} className={styles.button}>Run FIFO</button>
+      <button onClick={handleRunSJF} className={styles.button}>Run SJF</button>
+      <button onClick={handleRunSTCF} className={styles.button}>Run STCF</button>
       {processes.length > 0 && (
         <div>
-        <h2>Processes:</h2>
-        <pre>{JSON.stringify(processes, null, 2)}</pre>
-        <h2>Results:</h2>
-        <ProcessTable results={results} />
-        <GanttChart
-          executionOrder={results.filter(
-            (process): process is Process & { startTime: number; endTime: number } =>
-              process.startTime !== undefined && process.endTime !== undefined
-          )}
-        />
-      </div>
-    )}
-  </div>
-);
+          <h2>Processes:</h2>
+          <pre>{JSON.stringify(processes, null, 2)}</pre>
+          <h2>Results:</h2>
+          <ProcessTable results={results} />
+          <h2 className={styles.chartTitle}>Gantt Chart</h2>
+          <GanttChart
+            executionOrder={results.filter(
+              (process): process is Process & { startTime: number; endTime: number } =>
+                process.startTime !== undefined && process.endTime !== undefined
+            )}
+          />
+        </div>
+      )}
+    </div>
+  );
 }
