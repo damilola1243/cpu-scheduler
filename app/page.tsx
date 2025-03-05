@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import ProcessTable from '../components/ProcessTable';
 import GanttChart from '../components/GanttChart';
-import styles from './styles.module.css'; // Import the CSS module
+import styles from './styles.module.css';
+import ProcessDisplayTable from '../components/ProcessDisplayTable';
 
 interface Process {
   id: number;
@@ -174,7 +175,7 @@ export default function Home() {
       {processes.length > 0 && (
         <div>
           <h2>Processes:</h2>
-          <pre className={styles.pre}>{JSON.stringify(processes, null, 2)}</pre>
+          <ProcessDisplayTable processes={processes} />
           <h2>Results:</h2>
           <ProcessTable results={results} />
           <h2 className={styles.chartTitle}>Gantt Chart</h2>
