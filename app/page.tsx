@@ -13,7 +13,8 @@ interface Process {
   remainingTime: number;
   startTime?: number;
   endTime?: number;
-  executionId?: number; // Add executionId property
+  executionId?: number;
+  currentQueue: number; // Add currentQueue property
 }
 
 function generateProcesses(numProcesses: number): Process[] {
@@ -24,6 +25,7 @@ function generateProcesses(numProcesses: number): Process[] {
       arrivalTime: Math.floor(Math.random() * 10),
       burstTime: Math.floor(Math.random() * 15) + 1,
       remainingTime: 0,
+      currentQueue: 0, // Initialize currentQueue
     });
   }
   processes.forEach(process => process.remainingTime = process.burstTime);
@@ -188,6 +190,88 @@ function rr(processes: Process[], timeQuantum: number): Process[] {
   return executionOrder;
 }
 
+function mlfq(processes: Process[], queues: number[], timeQuantums: number[], boostInterval: number): (Process & { startTime: number; endTime: number; executionId: number })[] {
+  const executionOrder: (Process & { startTime: number; endTime: number; executionId: number })[] = [];
+  const readyQueues: Process[][] = Array.from({ length: queues.length }, () => []);
+  const processStates: { [key: number]: Process } = {};
+  let currentTime = 0;
+  let executionIdCounter = 0;
+  let boostTimer = 0;
+
+  processes.forEach((process) => {
+    processStates[process.id] = { ...process, currentQueue: 0, remainingTime: process.burstTime };
+    readyQueues[0].push(processStates[process.id]);
+  });
+
+  while (Object.values(processStates).some((p) => p.remainingTime > 0)) {
+    let processExecuted = false;
+
+    for (let queueIndex = 0; queueIndex < queues.length; queueIndex++) {
+      if (readyQueues[queueIndex].length > 0) {
+        const currentProcess = readyQueues[queueIndex].shift()!;
+        const timeQuantum = timeQuantums[queueIndex];
+        const executionTime = Math.min(timeQuantum, currentProcess.remainingTime);
+
+        executionOrder.push({
+          ...currentProcess,
+          startTime: currentTime,
+          endTime: currentTime + executionTime,
+          executionId: executionIdCounter++,
+        });
+
+        currentProcess.remainingTime -= executionTime;
+        currentTime += executionTime;
+        processExecuted = true;
+
+        if (currentProcess.remainingTime > 0) {
+          if (Math.random() < 0.2) {
+            readyQueues[0].push(currentProcess);
+            currentProcess.currentQueue = 0;
+          } else {
+            const nextQueue = Math.min(queueIndex + 1, queues.length - 1);
+            readyQueues[nextQueue].push(currentProcess);
+            currentProcess.currentQueue = nextQueue;
+          }
+        }
+
+        break;
+      }
+    }
+
+    if (!processExecuted) {
+      currentTime++;
+    }
+
+    boostTimer++;
+    if (boostTimer >= boostInterval) {
+      Object.values(processStates).forEach((process) => {
+        if (
+          process.currentQueue >= 0 &&
+          process.currentQueue < readyQueues.length &&
+          readyQueues[process.currentQueue] &&
+          readyQueues[process.currentQueue].length > 0
+        ) {
+          try {
+            readyQueues[process.currentQueue] = readyQueues[process.currentQueue].filter(
+              (p) => p.id !== process.id
+            );
+          } catch (error) {
+            console.error(`Error filtering queue ${process.currentQueue}:`, error);
+            console.log(`Queue before error: `, readyQueues[process.currentQueue]);
+            console.log(`process.currentQueue: `, process.currentQueue);
+            console.log(`readyQueues: `, readyQueues);
+          }
+        }
+        readyQueues[0].push(process);
+        process.currentQueue = 0;
+      });
+      boostTimer = 0;
+    }
+  }
+
+  return executionOrder;
+}
+
 export default function Home() {
   const [numProcesses, setNumProcesses] = useState<number>(5);
   const [processes, setProcesses] = useState<Process[]>([]);
@@ -200,6 +284,9 @@ export default function Home() {
     rr: Process[];
   }>({ fifo: [], sjf: [], stcf: [], rr: [] });
   const [timeQuantum, setTimeQuantum] = useState<number>(4);
+  const [queues, setQueues] = useState<number[]>([4, 8, 16]);
+  const [boostInterval, setBoostInterval] = useState<number>(10);
+  const [mlfqResults, setMlfqResults] = useState<Process[]>([]);
 
   const handleGenerateProcesses = () => {
     if (numProcesses <= 0) {
@@ -238,6 +325,10 @@ export default function Home() {
     });
   };
 
+  const handleRunMLFQ = () => {
+    setMlfqResults(mlfq(processes, queues, queues, boostInterval));
+  };
+
   const handleRunAll = () => {
     setAllResults({
       fifo: fifo(processes),
@@ -249,95 +340,146 @@ export default function Home() {
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>CPU Scheduling Simulator</h1>
-      <label className={styles.label}>Number of Processes:</label>
-      <input
-        type="number"
-        value={numProcesses}
-        onChange={(e) => {
-          const parsedValue = parseInt(e.target.value);
-          if (isNaN(parsedValue) || parsedValue < 0) {
-            setNumProcesses(0);
-            setErrorMessage('Please enter a positive number.');
-          } else {
-            setNumProcesses(parsedValue);
-            setErrorMessage('');
-          }
-        }}
-        onKeyPress={(e) => {
-          if (e.key === '-' || e.key === 'e') {
-            e.preventDefault();
-          }
-        }}
-        className={styles.input}
-      />
-      <button onClick={handleGenerateProcesses} className={styles.button}>Generate Processes</button>
-      {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
-      <button onClick={handleRunFIFO} className={styles.button}>Run FIFO</button>
-      <button onClick={handleRunSJF} className={styles.button}>Run SJF</button>
-      <button onClick={handleRunSTCF} className={styles.button}>Run STCF</button>
-      <label className={styles.label}>Time Quantum:</label>
-      <input
-        type="number"
-        value={timeQuantum}
-        onChange={(e) => setTimeQuantum(parseInt(e.target.value))}
-        className={styles.input}
-      />
-      <button onClick={handleRunRR} className={styles.button}>Run RR</button>
-      <button onClick={handleRunAll} className={styles.button}>Run All</button>
-      {processes.length > 0 && (
-  <div>
-    <h2>Processes:</h2>
-    <ProcessDisplayTable processes={processes} />
-    <h2>Results:</h2>
-    <div style={{ display: "flex" }}>
-      <div style={{ flex: 1, marginRight: "20px" }}>
-        <h3>FIFO</h3>
-        <ProcessTable results={allResults.fifo} />
-        <h2 className={styles.chartTitle}>Gantt Chart (FIFO)</h2>
-        <GanttChart
-          executionOrder={allResults.fifo.filter(
-            (process): process is Process & { startTime: number; endTime: number; executionId: number } =>
-              process.startTime !== undefined && process.endTime !== undefined && process.executionId !== undefined
-          )}
-        />
-      </div>
-      <div style={{ flex: 1, marginRight: "20px" }}>
-        <h3>SJF</h3>
-        <ProcessTable results={allResults.sjf} />
-        <h2 className={styles.chartTitle}>Gantt Chart (SJF)</h2>
-        <GanttChart
-          executionOrder={allResults.sjf.filter(
-            (process): process is Process & { startTime: number; endTime: number; executionId: number } =>
-              process.startTime !== undefined && process.endTime !== undefined && process.executionId !== undefined
-          )}
-        />
-      </div>
-      <div style={{ flex: 1, marginRight: "20px" }}>
-        <h3>STCF</h3>
-        <ProcessTable results={allResults.stcf} />
-        <h2 className={styles.chartTitle}>Gantt Chart (STCF)</h2>
-        <GanttChart
-          executionOrder={allResults.stcf.filter(
-            (process): process is Process & { startTime: number; endTime: number; executionId: number } =>
-              process.startTime !== undefined && process.endTime !== undefined && process.executionId !== undefined
-          )}
-        />
-      </div>
-      <div style={{ flex: 1 }}>
-        <h3>RR</h3>
-        <ProcessTable results={allResults.rr} />
-        <h2 className={styles.chartTitle}>Gantt Chart (RR)</h2>
-        <GanttChart
-          executionOrder={allResults.rr.filter(
-            (process): process is Process & { startTime: number; endTime: number; executionId: number } =>
-              process.startTime !== undefined && process.endTime !== undefined && process.executionId !== undefined
-          )}
-        />
-      </div>
-    </div>
-  </div>
-)}
+        <h1 className={styles.title}>CPU Scheduling Simulator</h1>
+
+        {/* Process Generation Controls */}
+        <div className={styles.controls}>
+            <label className={styles.label}>Number of Processes:</label>
+            <input
+                type="number"
+                value={numProcesses}
+                onChange={(e) => {
+                    const parsedValue = parseInt(e.target.value);
+                    if (isNaN(parsedValue) || parsedValue < 0) {
+                        setNumProcesses(0);
+                        setErrorMessage('Please enter a positive number.');
+                    } else {
+                        setNumProcesses(parsedValue);
+                        setErrorMessage('');
+                    }
+                }}
+                onKeyPress={(e) => {
+                    if (e.key === '-' || e.key === 'e') {
+                        e.preventDefault();
+                    }
+                }}
+                className={styles.input}
+            />
+            <button onClick={handleGenerateProcesses} className={styles.button}>Generate Processes</button>
+            {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
+        </div>
+
+        {/* Scheduling Algorithm Controls */}
+        <div className={styles.controls}>
+            <button onClick={handleRunFIFO} className={styles.button}>Run FIFO</button>
+            <button onClick={handleRunSJF} className={styles.button}>Run SJF</button>
+            <button onClick={handleRunSTCF} className={styles.button}>Run STCF</button>
+            <label className={styles.label}>Time Quantum:</label>
+            <input
+                type="number"
+                value={timeQuantum}
+                onChange={(e) => setTimeQuantum(parseInt(e.target.value))}
+                className={styles.input}
+            />
+            <button onClick={handleRunRR} className={styles.button}>Run RR</button>
+            <button onClick={handleRunAll} className={styles.button}>Run All</button>
+        </div>
+
+        {/* MLFQ Controls */}
+        <div className={styles.controls}>
+            <label className={styles.label}>Queues (Comma-separated Time Quantums):</label>
+            <input
+                type="text"
+                value={queues.join(',')}
+                onChange={(e) => setQueues(e.target.value.split(',').map(Number))}
+                className={styles.input}
+            />
+            <label className={styles.label}>Boost Interval:</label>
+            <input
+                type="number"
+                value={boostInterval}
+                onChange={(e) => setBoostInterval(parseInt(e.target.value))}
+                className={styles.input}
+            />
+            <button onClick={handleRunMLFQ} className={styles.button}>Run MLFQ</button>
+        </div>
+
+        {/* Results Display */}
+        {processes.length > 0 && (
+            <div>
+                <h2>Processes:</h2>
+                <ProcessDisplayTable processes={processes} />
+                <h2>Results:</h2>
+                <div style={{ display: "flex" }}>
+                    {/* FIFO Results */}
+                    <div style={{ flex: 1, marginRight: "20px" }}>
+                        <h3>FIFO</h3>
+                        <ProcessTable results={allResults.fifo} />
+                        <h2 className={styles.chartTitle}>Gantt Chart (FIFO)</h2>
+                        <GanttChart
+                            executionOrder={allResults.fifo.filter(
+                                (process): process is Process & { startTime: number; endTime: number; executionId: number } =>
+                                    process.startTime !== undefined && process.endTime !== undefined && process.executionId !== undefined
+                            )}
+                        />
+                    </div>
+
+                    {/* SJF Results */}
+                    <div style={{ flex: 1, marginRight: "20px" }}>
+                        <h3>SJF</h3>
+                        <ProcessTable results={allResults.sjf} />
+                        <h2 className={styles.chartTitle}>Gantt Chart (SJF)</h2>
+                        <GanttChart
+                            executionOrder={allResults.sjf.filter(
+                                (process): process is Process & { startTime: number; endTime: number; executionId: number } =>
+                                    process.startTime !== undefined && process.endTime !== undefined && process.executionId !== undefined
+                            )}
+                        />
+                    </div>
+
+                    {/* STCF Results */}
+                    <div style={{ flex: 1, marginRight: "20px" }}>
+                        <h3>STCF</h3>
+                        <ProcessTable results={allResults.stcf} />
+                        <h2 className={styles.chartTitle}>Gantt Chart (STCF)</h2>
+                        <GanttChart
+                            executionOrder={allResults.stcf.filter(
+                                (process): process is Process & { startTime: number; endTime: number; executionId: number } =>
+                                    process.startTime !== undefined && process.endTime !== undefined && process.executionId !== undefined
+                            )}
+                        />
+                    </div>
+
+                    {/* RR Results */}
+                    <div style={{ flex: 1 }}>
+                        <h3>RR</h3>
+                        <ProcessTable results={allResults.rr} />
+                        <h2 className={styles.chartTitle}>Gantt Chart (RR)</h2>
+                        <GanttChart
+                            executionOrder={allResults.rr.filter(
+                                (process): process is Process & { startTime: number; endTime: number; executionId: number } =>
+                                    process.startTime !== undefined && process.endTime !== undefined && process.executionId !== undefined
+                            )}
+                        />
+                    </div>
+                </div>
+
+                {/* MLFQ Results */}
+                {mlfqResults.length > 0 && (
+                    <div>
+                        <h3>MLFQ</h3>
+                        <ProcessTable results={mlfqResults} />
+                        <h2 className={styles.chartTitle}>Gantt Chart (MLFQ)</h2>
+                        <GanttChart
+                            executionOrder={mlfqResults.filter(
+                                (process): process is Process & { startTime: number; endTime: number; executionId: number } =>
+                                    process.startTime !== undefined && process.endTime !== undefined && process.executionId !== undefined
+                            )}
+                        />
+                    </div>
+                )}
+            </div>
+        )}
     </div>
   )
   };
