@@ -620,6 +620,9 @@ export default function Home() {
     />
   </div>
 )}
+<button onClick={generatePDF} className={styles.button}>
+      Download Results as PDF
+    </button>
             </div>
         )}
     </div>
