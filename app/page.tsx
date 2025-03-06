@@ -347,6 +347,7 @@ export default function Home() {
       stcf: stcf(processes),
       rr: rr(processes, timeQuantum),
     });
+    setMlfqResults(mlfq(processes, queues, queues, boostInterval));
   };
 
   interface ResultsData {
@@ -365,7 +366,7 @@ export default function Home() {
     doc.text('CPU Scheduling Results', 20, yPosition);
     yPosition += 15;
   
-    const algorithms = ['FIFO', 'SJF', 'STCF', 'RR', 'MLFQ'] as (keyof ResultsData)[]; // Type assertion
+    const algorithms = ['FIFO', 'SJF', 'STCF', 'RR', 'MLFQ'] as (keyof ResultsData)[];
   
     const resultsData: ResultsData = {
       FIFO: allResults.fifo,
