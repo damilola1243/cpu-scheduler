@@ -2,10 +2,19 @@
 
 import { useState } from 'react';
 import ProcessTable from '../components/ProcessTable';
-import GanttChart from '../components/GanttChart';
 import styles from './styles.module.css';
 import ProcessDisplayTable from '../components/ProcessDisplayTable';
+import { Bar } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 interface Process {
   id: number;
   arrivalTime: number;
@@ -413,71 +422,144 @@ export default function Home() {
                 <div style={{ display: "flex" }}>
                     {/* FIFO Results */}
                     <div style={{ flex: 1, marginRight: "20px" }}>
-                        <h3>FIFO</h3>
-                        <ProcessTable results={allResults.fifo} />
-                        <h2 className={styles.chartTitle}>Gantt Chart (FIFO)</h2>
-                        <GanttChart
-                            executionOrder={allResults.fifo.filter(
-                                (process): process is Process & { startTime: number; endTime: number; executionId: number } =>
-                                    process.startTime !== undefined && process.endTime !== undefined && process.executionId !== undefined
-                            )}
-                        />
-                    </div>
+  <h3>FIFO</h3>
+  <ProcessTable results={allResults.fifo} />
+  <h2 className={styles.chartTitle}>Bar Chart (FIFO)</h2> {/* Changed to Bar Chart */}
+  {allResults.fifo.length > 0 && (
+    <Bar
+      data={{
+        labels: allResults.fifo.map(process => `P${process.id}`),
+        datasets: [
+          {
+            label: 'Burst Time',
+            data: allResults.fifo.map(process => process.burstTime),
+            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+          },
+        ],
+      }}
+      options={{
+        scales: {
+          y: {
+            beginAtZero: true,
+          },
+        },
+      }}
+    />
+  )}
+</div>
 
                     {/* SJF Results */}
                     <div style={{ flex: 1, marginRight: "20px" }}>
-                        <h3>SJF</h3>
-                        <ProcessTable results={allResults.sjf} />
-                        <h2 className={styles.chartTitle}>Gantt Chart (SJF)</h2>
-                        <GanttChart
-                            executionOrder={allResults.sjf.filter(
-                                (process): process is Process & { startTime: number; endTime: number; executionId: number } =>
-                                    process.startTime !== undefined && process.endTime !== undefined && process.executionId !== undefined
-                            )}
-                        />
-                    </div>
+  <h3>SJF</h3>
+  <ProcessTable results={allResults.sjf} />
+  <h2 className={styles.chartTitle}>Bar Chart (SJF)</h2>
+  {allResults.sjf.length > 0 && (
+    <Bar
+      data={{
+        labels: allResults.sjf.map(process => `P${process.id}`),
+        datasets: [
+          {
+            label: 'Burst Time',
+            data: allResults.sjf.map(process => process.burstTime),
+            backgroundColor: 'rgba(255, 99, 132, 0.5)',
+          },
+        ],
+      }}
+      options={{
+        scales: {
+          y: {
+            beginAtZero: true,
+          },
+        },
+      }}
+    />
+  )}
+</div>
 
                     {/* STCF Results */}
                     <div style={{ flex: 1, marginRight: "20px" }}>
-                        <h3>STCF</h3>
-                        <ProcessTable results={allResults.stcf} />
-                        <h2 className={styles.chartTitle}>Gantt Chart (STCF)</h2>
-                        <GanttChart
-                            executionOrder={allResults.stcf.filter(
-                                (process): process is Process & { startTime: number; endTime: number; executionId: number } =>
-                                    process.startTime !== undefined && process.endTime !== undefined && process.executionId !== undefined
-                            )}
-                        />
-                    </div>
+  <h3>STCF</h3>
+  <ProcessTable results={allResults.stcf} />
+  <h2 className={styles.chartTitle}>Bar Chart (STCF)</h2>
+  {allResults.stcf.length > 0 && (
+    <Bar
+      data={{
+        labels: allResults.stcf.map(process => `P${process.id}`),
+        datasets: [
+          {
+            label: 'Burst Time',
+            data: allResults.stcf.map(process => process.burstTime),
+            backgroundColor: 'rgba(255, 206, 86, 0.5)',
+          },
+        ],
+      }}
+      options={{
+        scales: {
+          y: {
+            beginAtZero: true,
+          },
+        },
+      }}
+    />
+  )}
+</div>
 
                     {/* RR Results */}
                     <div style={{ flex: 1 }}>
-                        <h3>RR</h3>
-                        <ProcessTable results={allResults.rr} />
-                        <h2 className={styles.chartTitle}>Gantt Chart (RR)</h2>
-                        <GanttChart
-                            executionOrder={allResults.rr.filter(
-                                (process): process is Process & { startTime: number; endTime: number; executionId: number } =>
-                                    process.startTime !== undefined && process.endTime !== undefined && process.executionId !== undefined
-                            )}
-                        />
-                    </div>
+  <h3>RR</h3>
+  <ProcessTable results={allResults.rr} />
+  <h2 className={styles.chartTitle}>Bar Chart (RR)</h2>
+  {allResults.rr.length > 0 && (
+    <Bar
+      data={{
+        labels: allResults.rr.map(process => `P${process.id}`),
+        datasets: [
+          {
+            label: 'Burst Time',
+            data: allResults.rr.map(process => process.burstTime),
+            backgroundColor: 'rgba(75, 192, 192, 0.5)',
+          },
+        ],
+      }}
+      options={{
+        scales: {
+          y: {
+            beginAtZero: true,
+          },
+        },
+      }}
+    />
+  )}
+</div>
                 </div>
 
                 {/* MLFQ Results */}
                 {mlfqResults.length > 0 && (
-                    <div>
-                        <h3>MLFQ</h3>
-                        <ProcessTable results={mlfqResults} />
-                        <h2 className={styles.chartTitle}>Gantt Chart (MLFQ)</h2>
-                        <GanttChart
-                            executionOrder={mlfqResults.filter(
-                                (process): process is Process & { startTime: number; endTime: number; executionId: number } =>
-                                    process.startTime !== undefined && process.endTime !== undefined && process.executionId !== undefined
-                            )}
-                        />
-                    </div>
-                )}
+  <div>
+    <h3>MLFQ</h3>
+    <ProcessTable results={mlfqResults} />
+    <h2 className={styles.chartTitle}>Bar Chart (MLFQ)</h2>
+    <Bar
+      data={{
+        labels: mlfqResults.map(process => `P${process.id}`),
+        datasets: [
+          {
+            label: 'Burst Time',
+            data: mlfqResults.map(process => process.burstTime),
+            backgroundColor: 'rgba(153, 102, 255, 0.5)',
+          },
+        ],
+      }}
+      options={{
+        scales: {
+          y: {
+            beginAtZero: true,
+          },
+        },
+      }}
+    />
+  </div>
+)}
             </div>
         )}
     </div>
