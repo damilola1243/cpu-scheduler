@@ -19,9 +19,6 @@ function GanttChart({ executionOrder }: GanttChartProps) {
     return null;
   }
 
-  const maxEndTime = Math.max(...executionOrder.map((process) => process.endTime || 0));
-  console.log("maxEndTime:", maxEndTime);
-
   const scaleFactor = 20;
 
   return (
@@ -30,29 +27,17 @@ function GanttChart({ executionOrder }: GanttChartProps) {
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', width: '80px' }}>
           <div style={{ transform: 'rotate(-90deg)', whiteSpace: 'nowrap' }}>Process ID</div>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', width: '100%', overflowY: 'auto', border: '1px solid #ccc' }}>          {executionOrder.map((process) => { // Removed index from map parameters.
+        <div style={{ display: 'flex', flexDirection: 'column', width: '100%', overflowY: 'auto', border: '1px solid #ccc' }}>
+          {executionOrder.map((process) => { // Removed index
             const startTime = process.startTime || 0;
             const endTime = process.endTime || 0;
             const duration = endTime - startTime;
-
             const width = duration * scaleFactor;
-
-            console.log(
-              "Process ID:",
-              process.id,
-              "Start:",
-              startTime,
-              "End:",
-              endTime,
-              "Width:",
-              width
-            );
-
             const color = `hsl(${process.id * 30}, 80%, 60%)`;
 
             return (
               <div
-                key={process.executionId} // Using process.executionId as the key.
+                key={process.executionId}
                 style={{
                   width: `${width}px`,
                   height: '30px',
@@ -61,8 +46,8 @@ function GanttChart({ executionOrder }: GanttChartProps) {
                   alignItems: 'center',
                   justifyContent: 'center',
                   color: 'white',
-                  textAlign: "center",
-                  lineHeight: "30px",
+                  textAlign: 'center',
+                  lineHeight: '30px',
                   borderRadius: '3px',
                   margin: '2px',
                 }}
