@@ -116,6 +116,57 @@ function stcf(processes: Process[]): Process[] {
   return executionOrder;
 }
 
+function rr(processes: Process[], timeQuantum: number): Process[] {
+  const executionOrder: Process[] = [];
+  const remainingProcesses = processes.map((process) => ({ ...process }));
+  const queue: Process[] = [];
+  let currentTime = 0;
+
+  remainingProcesses
+    .filter((process) => process.arrivalTime <= currentTime)
+    .forEach((process) => queue.push(process));
+
+  while (queue.length > 0 || remainingProcesses.some(proc => proc.remainingTime > 0)) {
+    if (queue.length === 0) {
+      currentTime++;
+      remainingProcesses
+        .filter((process) => process.arrivalTime === currentTime)
+        .forEach((process) => queue.push(process));
+      continue;
+    }
+
+    const currentProcess = queue.shift() as Process;
+
+    if (currentProcess.remainingTime <= timeQuantum) {
+      executionOrder.push({
+        ...currentProcess,
+        startTime: currentTime,
+        endTime: currentTime + currentProcess.remainingTime,
+      });
+      currentTime += currentProcess.remainingTime;
+      currentProcess.remainingTime = 0;
+    } else {
+      executionOrder.push({
+        ...currentProcess,
+        startTime: currentTime,
+        endTime: currentTime + timeQuantum,
+      });
+      currentTime += timeQuantum;
+      currentProcess.remainingTime -= timeQuantum;
+    }
+
+    remainingProcesses
+      .filter((process) => process.arrivalTime <= currentTime && process.remainingTime > 0 && process.id !== currentProcess.id && !queue.some(queued => queued.id === process.id))
+      .forEach((process) => queue.push(process));
+
+    if (currentProcess.remainingTime > 0) {
+      queue.push(currentProcess);
+    }
+  }
+
+  return executionOrder;
+}
+
 export default function Home() {
   const [numProcesses, setNumProcesses] = useState<number>(5);
   const [processes, setProcesses] = useState<Process[]>([]);
@@ -125,7 +176,9 @@ export default function Home() {
     fifo: Process[];
     sjf: Process[];
     stcf: Process[];
-  }>({ fifo: [], sjf: [], stcf: [] });
+    rr: Process[];
+  }>({ fifo: [], sjf: [], stcf: [], rr: [] });
+  const [timeQuantum, setTimeQuantum] = useState<number>(4);
 
   const handleGenerateProcesses = () => {
     if (numProcesses <= 0) {
@@ -157,11 +210,19 @@ export default function Home() {
     });
   };
 
+  const handleRunRR = () => {
+    setAllResults({
+      ...allResults,
+      rr: rr(processes, timeQuantum),
+    });
+  };
+
   const handleRunAll = () => {
     setAllResults({
       fifo: fifo(processes),
       sjf: sjf(processes),
       stcf: stcf(processes),
+      rr: rr(processes, timeQuantum),
     });
   };
 
@@ -194,6 +255,14 @@ export default function Home() {
       <button onClick={handleRunFIFO} className={styles.button}>Run FIFO</button>
       <button onClick={handleRunSJF} className={styles.button}>Run SJF</button>
       <button onClick={handleRunSTCF} className={styles.button}>Run STCF</button>
+      <label className={styles.label}>Time Quantum:</label>
+      <input
+        type="number"
+        value={timeQuantum}
+        onChange={(e) => setTimeQuantum(parseInt(e.target.value))}
+        className={styles.input}
+      />
+      <button onClick={handleRunRR} className={styles.button}>Run RR</button>
       <button onClick={handleRunAll} className={styles.button}>Run All</button>
       {processes.length > 0 && (
         <div>
@@ -223,7 +292,7 @@ export default function Home() {
                 )}
               />
             </div>
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1, marginRight: "20px" }}>
               <h3>STCF</h3>
               <ProcessTable results={allResults.stcf} />
               <h2 className={styles.chartTitle}>Gantt Chart (STCF)</h2>
@@ -234,9 +303,20 @@ export default function Home() {
                 )}
               />
             </div>
+            <div style={{ flex: 1 }}>
+              <h3>RR</h3>
+              <ProcessTable results={allResults.rr} />
+              <h2 className={styles.chartTitle}>Gantt Chart (RR)</h2>
+              <GanttChart
+                executionOrder={allResults.rr.filter(
+                  (process): process is Process & { startTime: number; endTime: number } =>
+                    process.startTime !== undefined && process.endTime !== undefined
+                )}
+              />
+            </div>
           </div>
         </div>
       )}
     </div>
-  );
-}
+  )
+  };

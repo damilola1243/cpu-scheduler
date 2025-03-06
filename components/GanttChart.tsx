@@ -24,33 +24,33 @@ function GanttChart({ executionOrder }: GanttChartProps) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', height: '50px', width: '100%', overflowX: 'auto' }}>
       {executionOrder.map((process) => {
-        const startTime = process.startTime || 0;
-        const endTime = process.endTime || 0;
-        const duration = endTime - startTime;
-        const startPercentage = (startTime / maxEndTime) * 100;
-        const widthPercentage = (duration / maxEndTime) * 100;
+  const startTime = process.startTime || 0;
+  const endTime = process.endTime || 0;
+  const duration = endTime - startTime;
+  const startPercentage = (startTime / maxEndTime) * 100;
+  const widthPercentage = (duration / maxEndTime) * 100;
 
-        return (
-          <motion.div
-            key={process.id}
-            style={{
-              position: 'absolute',
-              left: `${startPercentage}%`,
-              height: '30px',
-              backgroundColor: '#007bff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-            }}
-            initial={{ width: 0 }}
-            animate={{ width: `${widthPercentage}%` }}
-            transition={{ duration: 1 }}
-          >
-            {process.id}
-          </motion.div>
-        );
-      })}
+  return (
+    <motion.div
+      key={process.id} // Add this line!
+      style={{
+        position: 'absolute',
+        left: `${startPercentage}%`,
+        height: '30px',
+        backgroundColor: '#007bff',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: 'white',
+      }}
+      initial={{ width: 0 }}
+      animate={{ width: `${widthPercentage}%` }}
+      transition={{ duration: 1 }}
+    >
+      {process.id}
+    </motion.div>
+  );
+})}
     </div>
   );
 }
