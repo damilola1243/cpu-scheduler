@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 
 interface Process {
   id: number;
@@ -19,38 +18,56 @@ function GanttChart({ executionOrder }: GanttChartProps) {
     return null;
   }
 
+  // Calculate maximum end time.
   const maxEndTime = Math.max(...executionOrder.map((process) => process.endTime || 0));
+  console.log("maxEndTime:", maxEndTime);
+
+  // Scaling factor (adjust as needed).
+  const scaleFactor = 20; // Pixels per time unit.
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', height: '50px', width: '100%', overflowX: 'auto' }}>
       {executionOrder.map((process) => {
-  const startTime = process.startTime || 0;
-  const endTime = process.endTime || 0;
-  const duration = endTime - startTime;
-  const startPercentage = (startTime / maxEndTime) * 100;
-  const widthPercentage = (duration / maxEndTime) * 100;
+        const startTime = process.startTime || 0;
+        const endTime = process.endTime || 0;
+        const duration = endTime - startTime;
 
-  return (
-    <motion.div
-      key={process.id} // Add this line!
-      style={{
-        position: 'absolute',
-        left: `${startPercentage}%`,
-        height: '30px',
-        backgroundColor: '#007bff',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: 'white',
-      }}
-      initial={{ width: 0 }}
-      animate={{ width: `${widthPercentage}%` }}
-      transition={{ duration: 1 }}
-    >
-      {process.id}
-    </motion.div>
-  );
-})}
+        // Calculate pixel-based left and width.
+        const left = startTime * scaleFactor;
+        const width = duration * scaleFactor;
+
+        console.log(
+          "Process ID:",
+          process.id,
+          "Start:",
+          startTime,
+          "End:",
+          endTime,
+          "Left:",
+          left,
+          "Width:",
+          width
+        );
+
+        return (
+          <div // Changed motion.div to div
+            key={process.id}
+            style={{
+              position: 'absolute',
+              left: `${left}px`,
+              width: `${width}px`,
+              height: '30px',
+              backgroundColor: '#007bff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+            }}
+          >
+            {process.id}
+          </div>
+        );
+      })}
     </div>
   );
 }
