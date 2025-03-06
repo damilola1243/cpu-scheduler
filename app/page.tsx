@@ -6,6 +6,8 @@ import styles from './styles.module.css';
 import ProcessDisplayTable from '../components/ProcessDisplayTable';
 import { Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
+import jsPDF from 'jspdf'; // Import jsPDF
+
 
 ChartJS.register(
   CategoryScale,
@@ -345,6 +347,64 @@ export default function Home() {
       stcf: stcf(processes),
       rr: rr(processes, timeQuantum),
     });
+  };
+
+  interface ResultsData {
+    FIFO: Process[];
+    SJF: Process[];
+    STCF: Process[];
+    RR: Process[];
+    MLFQ: Process[];
+  }
+  
+  const generatePDF = () => {
+    const doc = new jsPDF();
+    let yPosition = 20;
+  
+    doc.setFontSize(18);
+    doc.text('CPU Scheduling Results', 20, yPosition);
+    yPosition += 15;
+  
+    const algorithms = ['FIFO', 'SJF', 'STCF', 'RR', 'MLFQ'] as (keyof ResultsData)[]; // Type assertion
+  
+    const resultsData: ResultsData = {
+      FIFO: allResults.fifo,
+      SJF: allResults.sjf,
+      STCF: allResults.stcf,
+      RR: allResults.rr,
+      MLFQ: mlfqResults,
+    };
+  
+    algorithms.forEach((algorithm) => {
+      doc.setFontSize(14);
+      doc.text(`${algorithm} Results:`, 20, yPosition);
+      yPosition += 10;
+  
+      const results = resultsData[algorithm];
+  
+      if (results) {
+        doc.setFontSize(12);
+        doc.text('Process ID | Arrival Time | Burst Time', 20, yPosition);
+        yPosition += 8;
+  
+        results.forEach((process: Process) => {
+          doc.text(
+            `${process.id} | ${process.arrivalTime} | ${process.burstTime}`,
+            20,
+            yPosition
+          );
+          yPosition += 8;
+        });
+      } else {
+        doc.text('No results available.', 20, yPosition);
+        yPosition += 8;
+        console.error(`No results found for ${algorithm}`);
+      }
+  
+      yPosition += 10;
+    });
+  
+    doc.save('cpu_scheduling_results.pdf');
   };
 
   return (
