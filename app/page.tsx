@@ -25,7 +25,7 @@ interface Process {
   startTime?: number;
   endTime?: number;
   executionId?: number;
-  currentQueue: number; // Add currentQueue property
+  currentQueue: number;
 }
 
 function generateProcesses(numProcesses: number): Process[] {
@@ -361,6 +361,8 @@ export default function Home() {
   const generatePDF = () => {
     const doc = new jsPDF();
     let yPosition = 20;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight() - 40; // Leave some margin
   
     doc.setFontSize(18);
     doc.text('CPU Scheduling Results', 20, yPosition);
@@ -383,12 +385,20 @@ export default function Home() {
   
       const results = resultsData[algorithm];
   
-      if (results) {
+      if (results && results.length > 0) {
         doc.setFontSize(12);
         doc.text('Process ID | Arrival Time | Burst Time', 20, yPosition);
         yPosition += 8;
   
         results.forEach((process: Process) => {
+          if (yPosition > pageHeight) {
+            doc.addPage();
+            yPosition = 20;
+            doc.setFontSize(12);
+            doc.text('Process ID | Arrival Time | Burst Time', 20, yPosition);
+            yPosition += 8;
+          }
+  
           doc.text(
             `${process.id} | ${process.arrivalTime} | ${process.burstTime}`,
             20,
@@ -397,6 +407,10 @@ export default function Home() {
           yPosition += 8;
         });
       } else {
+        if (yPosition > pageHeight) {
+          doc.addPage();
+          yPosition = 20;
+        }
         doc.text('No results available.', 20, yPosition);
         yPosition += 8;
         console.error(`No results found for ${algorithm}`);
