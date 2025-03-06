@@ -13,6 +13,7 @@ interface Process {
   remainingTime: number;
   startTime?: number;
   endTime?: number;
+  executionId?: number; // Add executionId property
 }
 
 function generateProcesses(numProcesses: number): Process[] {
@@ -33,6 +34,7 @@ function fifo(processes: Process[]): Process[] {
   const executionOrder: Process[] = [];
   const sortedProcesses = [...processes].sort((a, b) => a.arrivalTime - b.arrivalTime);
   let currentTime = 0;
+  let executionId = 0;
 
   sortedProcesses.forEach((process) => {
     currentTime = Math.max(currentTime, process.arrivalTime);
@@ -41,6 +43,7 @@ function fifo(processes: Process[]): Process[] {
       ...nextProcess,
       startTime: currentTime,
       endTime: currentTime + nextProcess.burstTime,
+      executionId: executionId++,
     });
     currentTime += nextProcess.burstTime;
   });
@@ -54,6 +57,7 @@ function sjf(processes: Process[]): Process[] {
   const sortedProcesses = [...processes].sort((a, b) => a.arrivalTime - b.arrivalTime);
   let currentTime = 0;
   let processIndex = 0;
+  let executionId = 0;
 
   while (executionOrder.length < processes.length) {
     while (processIndex < sortedProcesses.length && sortedProcesses[processIndex].arrivalTime <= currentTime) {
@@ -73,6 +77,7 @@ function sjf(processes: Process[]): Process[] {
       ...nextProcess,
       startTime: currentTime,
       endTime: currentTime + nextProcess.burstTime,
+      executionId: executionId++,
     });
     currentTime += nextProcess.burstTime;
   }
@@ -83,6 +88,8 @@ function stcf(processes: Process[]): Process[] {
   const executionOrder: Process[] = [];
   const remainingProcesses = processes.map(process => ({ ...process }));
   let currentTime = 0;
+  let executionId = 0;
+  const processStartTimes: { [key: number]: number } = {}; // Track start times
 
   while (remainingProcesses.length > 0) {
     let shortestProcess: number | null = null;
@@ -100,14 +107,20 @@ function stcf(processes: Process[]): Process[] {
       continue;
     }
 
+    if (processStartTimes[remainingProcesses[shortestProcess].id] === undefined) {
+      processStartTimes[remainingProcesses[shortestProcess].id] = currentTime;
+    }
+
     remainingProcesses[shortestProcess].remainingTime--;
 
     if (remainingProcesses[shortestProcess].remainingTime === 0) {
       executionOrder.push({
-        ...processes[shortestProcess],
-        startTime: currentTime - processes[shortestProcess].burstTime + 1,
-        endTime: currentTime + 1
+        ...remainingProcesses[shortestProcess],
+        startTime: processStartTimes[remainingProcesses[shortestProcess].id],
+        endTime: currentTime + 1,
+        executionId: executionId++,
       });
+      delete processStartTimes[remainingProcesses[shortestProcess].id];
       remainingProcesses.splice(shortestProcess, 1);
     }
 
@@ -121,17 +134,18 @@ function rr(processes: Process[], timeQuantum: number): Process[] {
   const remainingProcesses = processes.map((process) => ({ ...process }));
   const queue: Process[] = [];
   let currentTime = 0;
+  let executionId = 0; // Unique ID for execution order entries
 
   remainingProcesses
     .filter((process) => process.arrivalTime <= currentTime)
-    .forEach((process) => queue.push(process));
+    .forEach((process) => queue.push({ ...process }));
 
   while (queue.length > 0 || remainingProcesses.some(proc => proc.remainingTime > 0)) {
     if (queue.length === 0) {
       currentTime++;
       remainingProcesses
         .filter((process) => process.arrivalTime === currentTime)
-        .forEach((process) => queue.push(process));
+        .forEach((process) => queue.push({ ...process }));
       continue;
     }
 
@@ -142,14 +156,21 @@ function rr(processes: Process[], timeQuantum: number): Process[] {
         ...currentProcess,
         startTime: currentTime,
         endTime: currentTime + currentProcess.remainingTime,
+        executionId: executionId++, // Add unique execution ID
       });
       currentTime += currentProcess.remainingTime;
       currentProcess.remainingTime = 0;
+
+      const index = remainingProcesses.findIndex(p => p.id === currentProcess.id);
+      if (index !== -1) {
+        remainingProcesses.splice(index, 1);
+      }
     } else {
       executionOrder.push({
         ...currentProcess,
         startTime: currentTime,
         endTime: currentTime + timeQuantum,
+        executionId: executionId++, // Add unique execution ID
       });
       currentTime += timeQuantum;
       currentProcess.remainingTime -= timeQuantum;
@@ -157,10 +178,10 @@ function rr(processes: Process[], timeQuantum: number): Process[] {
 
     remainingProcesses
       .filter((process) => process.arrivalTime <= currentTime && process.remainingTime > 0 && process.id !== currentProcess.id && !queue.some(queued => queued.id === process.id))
-      .forEach((process) => queue.push(process));
+      .forEach((process) => queue.push({ ...process }));
 
     if (currentProcess.remainingTime > 0) {
-      queue.push(currentProcess);
+      queue.push({ ...currentProcess });
     }
   }
 
@@ -265,58 +286,58 @@ export default function Home() {
       <button onClick={handleRunRR} className={styles.button}>Run RR</button>
       <button onClick={handleRunAll} className={styles.button}>Run All</button>
       {processes.length > 0 && (
-        <div>
-          <h2>Processes:</h2>
-          <ProcessDisplayTable processes={processes} />
-          <h2>Results:</h2>
-          <div style={{ display: "flex" }}>
-            <div style={{ flex: 1, marginRight: "20px" }}>
-              <h3>FIFO</h3>
-              <ProcessTable results={allResults.fifo} />
-              <h2 className={styles.chartTitle}>Gantt Chart (FIFO)</h2>
-              <GanttChart
-                executionOrder={allResults.fifo.filter(
-                  (process): process is Process & { startTime: number; endTime: number } =>
-                    process.startTime !== undefined && process.endTime !== undefined
-                )}
-              />
-            </div>
-            <div style={{ flex: 1, marginRight: "20px" }}>
-              <h3>SJF</h3>
-              <ProcessTable results={allResults.sjf} />
-              <h2 className={styles.chartTitle}>Gantt Chart (SJF)</h2>
-              <GanttChart
-                executionOrder={allResults.sjf.filter(
-                  (process): process is Process & { startTime: number; endTime: number } =>
-                    process.startTime !== undefined && process.endTime !== undefined
-                )}
-              />
-            </div>
-            <div style={{ flex: 1, marginRight: "20px" }}>
-              <h3>STCF</h3>
-              <ProcessTable results={allResults.stcf} />
-              <h2 className={styles.chartTitle}>Gantt Chart (STCF)</h2>
-              <GanttChart
-                executionOrder={allResults.stcf.filter(
-                  (process): process is Process & { startTime: number; endTime: number } =>
-                    process.startTime !== undefined && process.endTime !== undefined
-                )}
-              />
-            </div>
-            <div style={{ flex: 1 }}>
-              <h3>RR</h3>
-              <ProcessTable results={allResults.rr} />
-              <h2 className={styles.chartTitle}>Gantt Chart (RR)</h2>
-              <GanttChart
-                executionOrder={allResults.rr.filter(
-                  (process): process is Process & { startTime: number; endTime: number } =>
-                    process.startTime !== undefined && process.endTime !== undefined
-                )}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+  <div>
+    <h2>Processes:</h2>
+    <ProcessDisplayTable processes={processes} />
+    <h2>Results:</h2>
+    <div style={{ display: "flex" }}>
+      <div style={{ flex: 1, marginRight: "20px" }}>
+        <h3>FIFO</h3>
+        <ProcessTable results={allResults.fifo} />
+        <h2 className={styles.chartTitle}>Gantt Chart (FIFO)</h2>
+        <GanttChart
+          executionOrder={allResults.fifo.filter(
+            (process): process is Process & { startTime: number; endTime: number; executionId: number } =>
+              process.startTime !== undefined && process.endTime !== undefined && process.executionId !== undefined
+          )}
+        />
+      </div>
+      <div style={{ flex: 1, marginRight: "20px" }}>
+        <h3>SJF</h3>
+        <ProcessTable results={allResults.sjf} />
+        <h2 className={styles.chartTitle}>Gantt Chart (SJF)</h2>
+        <GanttChart
+          executionOrder={allResults.sjf.filter(
+            (process): process is Process & { startTime: number; endTime: number; executionId: number } =>
+              process.startTime !== undefined && process.endTime !== undefined && process.executionId !== undefined
+          )}
+        />
+      </div>
+      <div style={{ flex: 1, marginRight: "20px" }}>
+        <h3>STCF</h3>
+        <ProcessTable results={allResults.stcf} />
+        <h2 className={styles.chartTitle}>Gantt Chart (STCF)</h2>
+        <GanttChart
+          executionOrder={allResults.stcf.filter(
+            (process): process is Process & { startTime: number; endTime: number; executionId: number } =>
+              process.startTime !== undefined && process.endTime !== undefined && process.executionId !== undefined
+          )}
+        />
+      </div>
+      <div style={{ flex: 1 }}>
+        <h3>RR</h3>
+        <ProcessTable results={allResults.rr} />
+        <h2 className={styles.chartTitle}>Gantt Chart (RR)</h2>
+        <GanttChart
+          executionOrder={allResults.rr.filter(
+            (process): process is Process & { startTime: number; endTime: number; executionId: number } =>
+              process.startTime !== undefined && process.endTime !== undefined && process.executionId !== undefined
+          )}
+        />
+      </div>
+    </div>
+  </div>
+)}
     </div>
   )
   };
