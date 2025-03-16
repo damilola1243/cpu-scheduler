@@ -7,7 +7,7 @@ import ProcessDisplayTable from '../components/ProcessDisplayTable';
 import { Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import jsPDF from 'jspdf'; // Import jsPDF
-
+import 'jspdf-autotable'; // Import jsPDF AutoTable plugin
 
 ChartJS.register(
   CategoryScale,
@@ -357,19 +357,15 @@ export default function Home() {
     RR: Process[];
     MLFQ: Process[];
   }
-  
   const generatePDF = () => {
     const doc = new jsPDF();
     let yPosition = 20;
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight() - 40; // Leave some margin
-  
     doc.setFontSize(18);
     doc.text('CPU Scheduling Results', 20, yPosition);
     yPosition += 15;
-  
     const algorithms = ['FIFO', 'SJF', 'STCF', 'RR', 'MLFQ'] as (keyof ResultsData)[];
-  
     const resultsData: ResultsData = {
       FIFO: allResults.fifo,
       SJF: allResults.sjf,
@@ -377,19 +373,15 @@ export default function Home() {
       RR: allResults.rr,
       MLFQ: mlfqResults,
     };
-  
     algorithms.forEach((algorithm) => {
       doc.setFontSize(14);
       doc.text(`${algorithm} Results:`, 20, yPosition);
       yPosition += 10;
-  
       const results = resultsData[algorithm];
-  
       if (results && results.length > 0) {
         doc.setFontSize(12);
         doc.text('Process ID | Arrival Time | Burst Time', 20, yPosition);
         yPosition += 8;
-  
         results.forEach((process: Process) => {
           if (yPosition > pageHeight) {
             doc.addPage();
@@ -398,7 +390,6 @@ export default function Home() {
             doc.text('Process ID | Arrival Time | Burst Time', 20, yPosition);
             yPosition += 8;
           }
-  
           doc.text(
             `${process.id} | ${process.arrivalTime} | ${process.burstTime}`,
             20,
@@ -415,231 +406,229 @@ export default function Home() {
         yPosition += 8;
         console.error(`No results found for ${algorithm}`);
       }
-  
       yPosition += 10;
     });
-  
     doc.save('cpu_scheduling_results.pdf');
   };
 
   return (
     <div className={styles.container}>
-        <h1 className={styles.title}>CPU Scheduling Simulator</h1>
+      <h1 className={styles.title}>CPU Scheduling Simulator</h1>
 
-        {/* Process Generation Controls */}
-        <div className={styles.controls}>
-            <label className={styles.label}>Number of Processes:</label>
-            <input
-                type="number"
-                value={numProcesses}
-                onChange={(e) => {
-                    const parsedValue = parseInt(e.target.value);
-                    if (isNaN(parsedValue) || parsedValue < 0) {
-                        setNumProcesses(0);
-                        setErrorMessage('Please enter a positive number.');
-                    } else {
-                        setNumProcesses(parsedValue);
-                        setErrorMessage('');
-                    }
-                }}
-                onKeyPress={(e) => {
-                    if (e.key === '-' || e.key === 'e') {
-                        e.preventDefault();
-                    }
-                }}
-                className={styles.input}
-            />
-            <button onClick={handleGenerateProcesses} className={styles.button}>Generate Processes</button>
-            {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
-        </div>
+      {/* Process Generation Controls */}
+      <div className={styles.controls}>
+        <label className={styles.label}>Number of Processes:</label>
+        <input
+          type="number"
+          value={numProcesses}
+          onChange={(e) => {
+            const parsedValue = parseInt(e.target.value);
+            if (isNaN(parsedValue) || parsedValue < 0) {
+              setNumProcesses(0);
+              setErrorMessage('Please enter a positive number.');
+            } else {
+              setNumProcesses(parsedValue);
+              setErrorMessage('');
+            }
+          }}
+          onKeyPress={(e) => {
+            if (e.key === '-' || e.key === 'e') {
+              e.preventDefault();
+            }
+          }}
+          className={styles.input}
+        />
+        <button onClick={handleGenerateProcesses} className={styles.button}>Generate Processes</button>
+        {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
+      </div>
 
-        {/* Scheduling Algorithm Controls */}
-        <div className={styles.controls}>
-            <button onClick={handleRunFIFO} className={styles.button}>Run FIFO</button>
-            <button onClick={handleRunSJF} className={styles.button}>Run SJF</button>
-            <button onClick={handleRunSTCF} className={styles.button}>Run STCF</button>
-            <label className={styles.label}>Time Quantum:</label>
-            <input
-                type="number"
-                value={timeQuantum}
-                onChange={(e) => setTimeQuantum(parseInt(e.target.value))}
-                className={styles.input}
-            />
-            <button onClick={handleRunRR} className={styles.button}>Run RR</button>
-            <button onClick={handleRunAll} className={styles.button}>Run All</button>
-        </div>
+      {/* Scheduling Algorithm Controls */}
+      <div className={styles.controls}>
+        <button onClick={handleRunFIFO} className={styles.button}>Run FIFO</button>
+        <button onClick={handleRunSJF} className={styles.button}>Run SJF</button>
+        <button onClick={handleRunSTCF} className={styles.button}>Run STCF</button>
+        <label className={styles.label}>Time Quantum:</label>
+        <input
+          type="number"
+          value={timeQuantum}
+          onChange={(e) => setTimeQuantum(parseInt(e.target.value))}
+          className={styles.input}
+        />
+        <button onClick={handleRunRR} className={styles.button}>Run RR</button>
+        <button onClick={handleRunAll} className={styles.button}>Run All</button>
+      </div>
 
-        {/* MLFQ Controls */}
-        <div className={styles.controls}>
-            <label className={styles.label}>Queues (Comma-separated Time Quantums):</label>
-            <input
-                type="text"
-                value={queues.join(',')}
-                onChange={(e) => setQueues(e.target.value.split(',').map(Number))}
-                className={styles.input}
-            />
-            <label className={styles.label}>Boost Interval:</label>
-            <input
-                type="number"
-                value={boostInterval}
-                onChange={(e) => setBoostInterval(parseInt(e.target.value))}
-                className={styles.input}
-            />
-            <button onClick={handleRunMLFQ} className={styles.button}>Run MLFQ</button>
-        </div>
+      {/* MLFQ Controls */}
+      <div className={styles.controls}>
+        <label className={styles.label}>Queues (Comma-separated Time Quantums):</label>
+        <input
+          type="text"
+          value={queues.join(',')}
+          onChange={(e) => setQueues(e.target.value.split(',').map(Number))}
+          className={styles.input}
+        />
+        <label className={styles.label}>Boost Interval:</label>
+        <input
+          type="number"
+          value={boostInterval}
+          onChange={(e) => setBoostInterval(parseInt(e.target.value))}
+          className={styles.input}
+        />
+        <button onClick={handleRunMLFQ} className={styles.button}>Run MLFQ</button>
+      </div>
 
-        {/* Results Display */}
-        {processes.length > 0 && (
-            <div>
-                <h2>Processes:</h2>
-                <ProcessDisplayTable processes={processes} />
-                <h2>Results:</h2>
-                <div style={{ display: "flex" }}>
-                    {/* FIFO Results */}
-                    <div style={{ flex: 1, marginRight: "20px" }}>
-  <h3>FIFO</h3>
-  <ProcessTable results={allResults.fifo} />
-  <h2 className={styles.chartTitle}>Bar Chart (FIFO)</h2> {/* Changed to Bar Chart */}
-  {allResults.fifo.length > 0 && (
-    <Bar
-      data={{
-        labels: allResults.fifo.map(process => `P${process.id}`),
-        datasets: [
-          {
-            label: 'Burst Time',
-            data: allResults.fifo.map(process => process.burstTime),
-            backgroundColor: 'rgba(54, 162, 235, 0.5)',
-          },
-        ],
-      }}
-      options={{
-        scales: {
-          y: {
-            beginAtZero: true,
-          },
-        },
-      }}
-    />
-  )}
-</div>
-
-                    {/* SJF Results */}
-                    <div style={{ flex: 1, marginRight: "20px" }}>
-  <h3>SJF</h3>
-  <ProcessTable results={allResults.sjf} />
-  <h2 className={styles.chartTitle}>Bar Chart (SJF)</h2>
-  {allResults.sjf.length > 0 && (
-    <Bar
-      data={{
-        labels: allResults.sjf.map(process => `P${process.id}`),
-        datasets: [
-          {
-            label: 'Burst Time',
-            data: allResults.sjf.map(process => process.burstTime),
-            backgroundColor: 'rgba(255, 99, 132, 0.5)',
-          },
-        ],
-      }}
-      options={{
-        scales: {
-          y: {
-            beginAtZero: true,
-          },
-        },
-      }}
-    />
-  )}
-</div>
-
-                    {/* STCF Results */}
-                    <div style={{ flex: 1, marginRight: "20px" }}>
-  <h3>STCF</h3>
-  <ProcessTable results={allResults.stcf} />
-  <h2 className={styles.chartTitle}>Bar Chart (STCF)</h2>
-  {allResults.stcf.length > 0 && (
-    <Bar
-      data={{
-        labels: allResults.stcf.map(process => `P${process.id}`),
-        datasets: [
-          {
-            label: 'Burst Time',
-            data: allResults.stcf.map(process => process.burstTime),
-            backgroundColor: 'rgba(255, 206, 86, 0.5)',
-          },
-        ],
-      }}
-      options={{
-        scales: {
-          y: {
-            beginAtZero: true,
-          },
-        },
-      }}
-    />
-  )}
-</div>
-
-                    {/* RR Results */}
-                    <div style={{ flex: 1 }}>
-  <h3>RR</h3>
-  <ProcessTable results={allResults.rr} />
-  <h2 className={styles.chartTitle}>Bar Chart (RR)</h2>
-  {allResults.rr.length > 0 && (
-    <Bar
-      data={{
-        labels: allResults.rr.map(process => `P${process.id}`),
-        datasets: [
-          {
-            label: 'Burst Time',
-            data: allResults.rr.map(process => process.burstTime),
-            backgroundColor: 'rgba(75, 192, 192, 0.5)',
-          },
-        ],
-      }}
-      options={{
-        scales: {
-          y: {
-            beginAtZero: true,
-          },
-        },
-      }}
-    />
-  )}
-</div>
-                </div>
-
-                {/* MLFQ Results */}
-                {mlfqResults.length > 0 && (
-  <div>
-    <h3>MLFQ</h3>
-    <ProcessTable results={mlfqResults} />
-    <h2 className={styles.chartTitle}>Bar Chart (MLFQ)</h2>
-    <Bar
-      data={{
-        labels: mlfqResults.map(process => `P${process.id}`),
-        datasets: [
-          {
-            label: 'Burst Time',
-            data: mlfqResults.map(process => process.burstTime),
-            backgroundColor: 'rgba(153, 102, 255, 0.5)',
-          },
-        ],
-      }}
-      options={{
-        scales: {
-          y: {
-            beginAtZero: true,
-          },
-        },
-      }}
-    />
-  </div>
-)}
-<button onClick={generatePDF} className={styles.button}>
-      Download Results as PDF
-    </button>
+      {/* Results Display */}
+      {processes.length > 0 && (
+        <div>
+          <h2>Processes:</h2>
+          <ProcessDisplayTable processes={processes} />
+          <h2>Results:</h2>
+          <div style={{ display: "flex" }}>
+            {/* FIFO Results */}
+            <div style={{ flex: 1, marginRight: "20px" }}>
+              <h3>FIFO</h3>
+              <ProcessTable results={allResults.fifo} />
+              <h2 className={styles.chartTitle}>Bar Chart (FIFO)</h2> {/* Changed to Bar Chart */}
+              {allResults.fifo.length > 0 && (
+                <Bar
+                  data={{
+                    labels: allResults.fifo.map(process => `P${process.id}`),
+                    datasets: [
+                      {
+                        label: 'Burst Time',
+                        data: allResults.fifo.map(process => process.burstTime),
+                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                      },
+                    ],
+                  }}
+                  options={{
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                      },
+                    },
+                  }}
+                />
+              )}
             </div>
-        )}
+
+            {/* SJF Results */}
+            <div style={{ flex: 1, marginRight: "20px" }}>
+              <h3>SJF</h3>
+              <ProcessTable results={allResults.sjf} />
+              <h2 className={styles.chartTitle}>Bar Chart (SJF)</h2>
+              {allResults.sjf.length > 0 && (
+                <Bar
+                  data={{
+                    labels: allResults.sjf.map(process => `P${process.id}`),
+                    datasets: [
+                      {
+                        label: 'Burst Time',
+                        data: allResults.sjf.map(process => process.burstTime),
+                        backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                      },
+                    ],
+                  }}
+                  options={{
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                      },
+                    },
+                  }}
+                />
+              )}
+            </div>
+
+            {/* STCF Results */}
+            <div style={{ flex: 1, marginRight: "20px" }}>
+              <h3>STCF</h3>
+              <ProcessTable results={allResults.stcf} />
+              <h2 className={styles.chartTitle}>Bar Chart (STCF)</h2>
+              {allResults.stcf.length > 0 && (
+                <Bar
+                  data={{
+                    labels: allResults.stcf.map(process => `P${process.id}`),
+                    datasets: [
+                      {
+                        label: 'Burst Time',
+                        data: allResults.stcf.map(process => process.burstTime),
+                        backgroundColor: 'rgba(255, 206, 86, 0.5)',
+                      },
+                    ],
+                  }}
+                  options={{
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                      },
+                    },
+                  }}
+                />
+              )}
+            </div>
+
+            {/* RR Results */}
+            <div style={{ flex: 1 }}>
+              <h3>RR</h3>
+              <ProcessTable results={allResults.rr} />
+              <h2 className={styles.chartTitle}>Bar Chart (RR)</h2>
+              {allResults.rr.length > 0 && (
+                <Bar
+                  data={{
+                    labels: allResults.rr.map(process => `P${process.id}`),
+                    datasets: [
+                      {
+                        label: 'Burst Time',
+                        data: allResults.rr.map(process => process.burstTime),
+                        backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                      },
+                    ],
+                  }}
+                  options={{
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                      },
+                    },
+                  }}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* MLFQ Results */}
+          {mlfqResults.length > 0 && (
+            <div>
+              <h3>MLFQ</h3>
+              <ProcessTable results={mlfqResults} />
+              <h2 className={styles.chartTitle}>Bar Chart (MLFQ)</h2>
+              <Bar
+                data={{
+                  labels: mlfqResults.map(process => `P${process.id}`),
+                  datasets: [
+                    {
+                      label: 'Burst Time',
+                      data: mlfqResults.map(process => process.burstTime),
+                      backgroundColor: 'rgba(153, 102, 255, 0.5)',
+                    },
+                  ],
+                }}
+                options={{
+                  scales: {
+                    y: {
+                      beginAtZero: true,
+                    },
+                  },
+                }}
+              />
+            </div>
+          )}
+          <button onClick={generatePDF} className={styles.button}>
+            Download Results as PDF
+          </button>
+        </div>
+      )}
     </div>
   )
-  };
+};
