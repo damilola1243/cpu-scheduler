@@ -30,15 +30,17 @@ jobs:
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
           git push origin main
 
-      - name: Deploy to GitHub Pages
+      - name: Checkout gh-pages
         uses: actions/checkout@v3
         with:
           ref: gh-pages
           path: gh-pages
+
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.8.0
         with:
           ssh-private-key: ${{ secrets.DEPLOY_KEY }}
+
       - name: Deploy with SSH
         run: |
           git config --global user.email "actions@github.com"
