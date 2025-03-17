@@ -19,17 +19,16 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
+          cache: 'npm'  # Enable caching for faster builds
 
       - name: Install dependencies
         run: npm install
 
-      - name: Build and export static site
-        run: |
-          npm run build
-          npm run export  # This will generate the `out/` directory
+      - name: Build static site
+        run: npm run build  # Next.js 15 automatically generates the `out/` folder
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          branch: gh-pages  # Deploy to gh-pages branch
-          folder: out        # Folder containing static site
+          branch: gh-pages  # Deploy to the `gh-pages` branch
+          folder: out        # Folder containing the exported static site
